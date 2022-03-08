@@ -1,5 +1,5 @@
 let addToy = false;
-let jsonServer = "http://localhost:3000/toys";
+let jsonServer = "http://localhost:3000";
 
 document.addEventListener("DOMContentLoaded", () => {
   const addBtn = document.querySelector("#new-toy-btn");
@@ -50,7 +50,7 @@ function submitBtnListener(submitBtn, formContainer) {
 
 // Generic fetch GET function that takes in an API url and passes the parsed json off to the nextFn
 function getThings() {
-  fetch(jsonServer)
+  fetch(`${jsonServer}/toys`)
     .then(resp => resp.json())
     .then(json =>
       json.forEach(element => {
@@ -71,7 +71,7 @@ function postThings(objectData) {
     body: JSON.stringify(objectData),
   };
 
-  fetch(jsonServer, configurationObject)
+  fetch(`${jsonServer}/toys`, configurationObject)
     .then(resp => resp.json())
     .then(json => createCard(json));
 }
@@ -82,6 +82,7 @@ function createCard(obj) {
 
   const div = document.createElement("div");
   div.className = "card";
+  div.id = `toy-${obj.id}`;
 
   const h2 = document.createElement("h2");
   h2.textContent = obj.name;
@@ -95,7 +96,7 @@ function createCard(obj) {
 
   const btn = document.createElement("button");
   btn.className = "like-btn";
-  btn.id = obj.toyId;
+  btn.id = obj.id;
   btn.textContent = "Like ❤️";
 
   div.appendChild(h2);
@@ -107,29 +108,26 @@ function createCard(obj) {
 
   // Add event listener to like button
   btn.addEventListener("click", () => {
-    likeToy(obj.id);
+    obj.likes += 1;
+    updateLike(obj);
   });
 }
 
-function likeToy(toyId) {
-  console.log(toyId);
-
-  fetch(jsonServer)
+function updateLike(obj) {
+  // Create the configurationObject that will be passed in to the fetch
+  fetch(`${jsonServer}/toys/${obj.id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(obj),
+  })
     .then(resp => resp.json())
-    .then(json => console.log(Object.keys(json)));
-  //.then(json => json.forEach(element => console.log(element)));
-
-  // // Create the configurationObject that will be passed in to the fetch
-  // const configurationObject = {
-  //   method: "PATCH",
-  //   headers: {
-  //     "Content-Type": "application/json",
-  //     Accept: "application/json",
-  //   },
-  //   body: JSON.stringify(objectData),
-  // };
-
-  // fetch(jsonServer, configurationObject)
-  //   .then(resp => resp.json())
-  //   .then(json => createCard(json));
+    .then(json => {
+      document
+        .getElementById(`toy-${obj.id}`)
+        .getElementsByTagName("p")[0].textContent = `${json.likes} Likes`;
+    })
+    .catch(() => alert(`Sorry, that didn't work.`));
 }
